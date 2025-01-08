@@ -1,0 +1,108 @@
+<!-- public/index.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Twitter Trending Topics</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #1da1f2;
+            color: white;
+            border: none;
+            border-radius: 4px;
+        }
+        button:hover {
+            background-color: #1991db;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        #results {
+            margin-top: 20px;
+        }
+        .trend {
+            margin: 10px 0;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+        }
+        #error {
+            color: red;
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #ffebee;
+            border-radius: 4px;
+            display: none;
+        }
+        pre {
+            background-color: #f5f5f5;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+        .loading {
+            display: none;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Twitter Trending Topics Scraper</h1>
+    <button onclick="runScraper()" id="scrapeButton">Click here to run the script</button>
+    <div class="loading" id="loading">Loading trends...</div>
+    <div id="results"></div>
+    <div id="error"></div>
+
+    <script>
+        async function runScraper() {
+            const button = document.getElementById('scrapeButton');
+            const loading = document.getElementById('loading');
+            const results = document.getElementById('results');
+            const error = document.getElementById('error');
+
+            button.disabled = true;
+            loading.style.display = 'block';
+            results.innerHTML = '';
+            error.style.display = 'none';
+
+            try {
+                const response = await fetch('/scrape', { method: 'POST' });
+                const data = await response.json();
+
+                if (data.success && data.data.trends.length > 0) {
+                    const timestamp = new Date(data.data.timestamp).toLocaleString();
+                    let html = `
+                        <h2>Top Trending Hashtags as of ${timestamp}:</h2>
+                        ${data.data.trends.map((trend, index) => 
+                            `<div class="trend">${index + 1}. ${trend}</div>`
+                        ).join('')}
+                        <h3>Full MongoDB Record:</h3>
+                        <pre>${JSON.stringify(data.data.mongo_record, null, 2)}</pre>
+                    `;
+                    results.innerHTML = html;
+                } else {
+                    error.innerHTML = data.success ? 
+                        'No trending topics found.' : 
+                        'Error: ' + data.error;
+                    error.style.display = 'block';
+                }
+            } catch (err) {
+                error.innerHTML = 'Error: ' + err.message;
+                error.style.display = 'block';
+            } finally {
+                button.disabled = false;
+                loading.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>
