@@ -1,4 +1,3 @@
-// app.js
 const express = require('express');
 const path = require('path');
 require('dotenv').config();
@@ -7,6 +6,20 @@ const TwitterScraper = require('./twitterScraper');
 // Initialize express
 const app = express();
 const port = process.env.PORT || 3000;
+
+// Function to get client IP address
+// Function to get client IP address
+const getClientIp = (req) => {
+    // Check for the 'X-Forwarded-For' header (commonly used behind proxies)
+    const forwarded = req.headers['x-forwarded-for'];
+    if (forwarded) {
+        // The forwarded header might contain multiple IPs, the first one is the real IP
+        return forwarded.split(',')[0];
+    }
+    // Fallback to the remote address if no forwarded header exists
+    return req.connection.remoteAddress || req.socket.remoteAddress;
+};
+
 
 // Initialize scraper with environment variables
 const scraper = new TwitterScraper(
@@ -28,7 +41,8 @@ app.get('/', (req, res) => {
 app.post('/scrape', async (req, res) => {
     try {
         const record = await scraper.getTrendingTopics();
-        
+        const clientIp = getClientIp(req);
+
         // Filter out category headers and post counts
         const cleanTrends = record.trends.filter(trend => 
             !trend.includes(' · Trending') &&
@@ -37,12 +51,23 @@ app.post('/scrape', async (req, res) => {
             trend.startsWith('#')  // Only include hashtags
         ).slice(0, 5);  // Get top 5 trending hashtags
 
+        // Create formatted MongoDB record
+        const formattedRecord = {
+            _id: { XXX: "XXXXXXX" },
+            nameoftrend1: cleanTrends[0] || "XXXX",
+            nameoftrend2: cleanTrends[1] || "XXXX",
+            nameoftrend3: cleanTrends[2] || "XXXX",
+            nameoftrend4: cleanTrends[3] || "XXXX",
+            nameoftrend5: cleanTrends[4] || "XXXX"
+        };
+
         res.json({
             success: true,
             data: {
                 trends: cleanTrends,
                 timestamp: record.timestamp,
-                mongo_record: record
+                ip_address: clientIp,
+                mongo_record: formattedRecord
             }
         });
     } catch (error) {
@@ -53,7 +78,6 @@ app.post('/scrape', async (req, res) => {
         });
     }
 });
-
 
 // Start the server
 app.listen(port, () => {

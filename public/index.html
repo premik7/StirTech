@@ -68,25 +68,26 @@
             const loading = document.getElementById('loading');
             const results = document.getElementById('results');
             const error = document.getElementById('error');
-
+    
             button.disabled = true;
             loading.style.display = 'block';
             results.innerHTML = '';
             error.style.display = 'none';
-
+    
             try {
                 const response = await fetch('/scrape', { method: 'POST' });
                 const data = await response.json();
-
+    
                 if (data.success && data.data.trends.length > 0) {
                     const timestamp = new Date(data.data.timestamp).toLocaleString();
                     let html = `
-                        <h2>Top Trending Hashtags as of ${timestamp}:</h2>
-                        ${data.data.trends.map((trend, index) => 
-                            `<div class="trend">${index + 1}. ${trend}</div>`
-                        ).join('')}
-                        <h3>Full MongoDB Record:</h3>
-                        <pre>${JSON.stringify(data.data.mongo_record, null, 2)}</pre>
+                        <h2>These are the most happening topics as on ${timestamp}</h2>
+                        ${data.data.trends.map(trend => `<div class="trend">- ${trend}</div>`).join('')}
+                        <p>The IP address used for this query was ${data.data.ip_address}</p>
+                        <h3>Here's a JSON extract of this record from the MongoDB:</h3>
+                        <pre>[
+        ${JSON.stringify(data.data.mongo_record, null, 2)}
+    ]</pre>
                     `;
                     results.innerHTML = html;
                 } else {
